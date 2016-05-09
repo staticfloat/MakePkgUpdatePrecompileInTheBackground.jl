@@ -6,4 +6,6 @@ Unnecessarily long titles aside, this package adds a "background task progress r
 
 To try it out, just `use` this package, then run one of the testing functions above.
 
+Note that still on the TODO list is actually hooking into the `Pkg.update()` process; you have to manually run `recompile_everything()` after running `Pkg.update()` because trying to run `Pkg` operations from within another `Pkg` operation has problems for some reason.
+
 To support this package for eventual world domination, use the `#MakePkg.update()GreatAgain!` hashtag on any social media website that will accept that as a hashtag.
