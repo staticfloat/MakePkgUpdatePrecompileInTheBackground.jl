@@ -48,10 +48,8 @@ function supplant_repl_backend(;attempt=0)
 
         const old_on_done = mode.on_done
         mode.on_done = (state, buffer, ok) -> begin
-            global prompt_state, last_enter
-            if prompt_state == nothing
-                prompt_state = state
-            end
+            global last_enter
+
 
             # If there were lines written before, let's blank them!
             if last_draw_lines > 0
@@ -71,11 +69,18 @@ function supplant_repl_backend(;attempt=0)
             old_on_done(state, buffer, ok)
         end
 
-        # Use a hook specially added for this; to know when the prompt is ready
-        # for more input and no longer computing the previous result
+        # Use a hook specially added for this package to know when the prompt is
+        # ready for more input and no longer computing the previous result
         const old_on_ready = mode.on_ready
         mode.on_ready = (state) -> begin
-            global running_mutex
+            global prompt_state, running_mutex
+
+            # If we haven't snarfed the prompt_state yet, do so now
+            if prompt_state == nothing
+                prompt_state = state
+            end
+
+            # We're done running whatever we were running before, allow drawing
             unlock(running_mutex)
             return old_on_ready(state)
         end
@@ -83,9 +88,6 @@ function supplant_repl_backend(;attempt=0)
 
     # Ask the old backend to die, nicely
     put!(old_backend.repl_channel, (nothing, -1))
-
-    # "We're in".
-    print("\rSuccessfully supplanted REPL backend with our own\n")
 
     return nothing
 end
