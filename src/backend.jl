@@ -13,6 +13,14 @@ function supplant_repl_backend(;attempt=0)
         end
     end
 
+    if all([!isdefined(mode, :on_ready) for mode in Base.active_repl.interface.modes])
+        msg = """
+        This Julia's REPL doesn't have on_ready hooks!  See README.md for more:
+        https://github.com/staticfloat/MakePkgUpdatePrecompileInTheBackground.jl
+        """
+        error(msg)
+    end
+
     # First, create our own backend
     repl_channel = Channel(1)
     response_channel = Channel(1)
@@ -41,8 +49,10 @@ function supplant_repl_backend(;attempt=0)
     eval(Base, :(global active_repl; active_repl.backendref = REPL.REPLBackendRef($repl_channel,$response_channel)))
 
     # Hook into LineEdit mode `on_enter` and add a CTRL-X keymapping for debugging of cursor position
+    failmodes = 0
     for mode in Base.active_repl.interface.modes
-        if !isdefined(mode, :on_done)
+        if !isdefined(mode, :on_ready)
+            failmodes += 1
             continue
         end
 
@@ -67,6 +77,20 @@ function supplant_repl_backend(;attempt=0)
             end
             last_enter = time()
             old_on_done(state, buffer, ok)
+        end
+
+        const old_on_transition_start = mode.on_transition_start
+        mode.on_transition_start = (state) -> begin
+            global running_mutex
+            lock(running_mutex)
+            return old_on_transition_start(state)
+        end
+
+        const old_on_transition_stop = mode.on_transition_stop
+        mode.on_transition_start = (state) -> begin
+            global running_mutex
+            unlock(running_mutex)
+            return old_on_transition_stop(state)
         end
 
         # Use a hook specially added for this package to know when the prompt is

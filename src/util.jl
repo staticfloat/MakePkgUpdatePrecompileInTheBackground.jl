@@ -6,7 +6,7 @@ end
 
 function progress_bar(progress::Float64, bar_width::Int)
     progress = max(0,min(1,progress))
-    num_hashes = round(Int,progress*bar_width)
+    num_hashes = floor(Int,progress*bar_width)
     return "#"^num_hashes * " "^(bar_width - num_hashes)
 end
 
@@ -52,7 +52,7 @@ function cycle_progress_line(c::Cycle, width)
     if c.progress >= 1.0
         return nothing
     end
-    bar_width = max(0, width - strwidth(c.name)) - 12
+    bar_width = max(0, width - strwidth(c.name)) - 32
     return @sprintf("%s: [%s] (%02.1f%%)", c.name, progress_bar(c.progress, bar_width), c.progress*100)
 end
 
@@ -76,6 +76,11 @@ function stop_cycling(name::AbstractString)
     if haskey(cycles, name)
         stop(cycles[name])
         delete!(cycles, name)
+
+        # Kill this name
+        report_progress(name) do width
+            return nothing
+        end
     end
     return nothing
 end

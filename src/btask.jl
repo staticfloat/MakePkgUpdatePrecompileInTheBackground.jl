@@ -47,42 +47,40 @@ function btask_draw()
     num_lines = sum(Int[div(max(0,w-1),term_width)+1 for w in all_widths])
 
     # Have we hit enter since the last time we drew?
-    if last_enter == last_draw_enter
-        # If not, then keep num_lines at least as large as last_draw_lines
-        num_lines = max(num_lines, last_draw_lines)
-    else
+    if last_enter != last_draw_enter
         # If so, then update last_draw_enter and reset last_draw_lines
         last_draw_enter = last_enter
         last_draw_lines = 0
     end
+
+    num_lines = max(num_lines, last_draw_lines)
 
     # Calculate how many lines we need to move up due to the user typing stuff
     skip_lines = max(cursor_position(prompt_state)[1], 0)
 
     # Now draw the lines
     if num_lines > 0
-        # Move up to the top of our play area
-        moveup_lines = max(last_draw_lines, 1) + skip_lines
-        write(STDOUT,"$(CSI)$(moveup_lines)A$(CSI)1G")
-
-        # Now add as many lines as we still need
-        if moveup_lines < num_lines
-            write(STDOUT,"\n"^(num_lines - moveup_lines + 1))
-            write(STDOUT,"$(CSI)$(num_lines - moveup_lines + 1)A")
-        end
+        # Move up to just above julia> prompt, plus last_draw_lines
+        write(STDOUT,"$(CSI)$(skip_lines + last_draw_lines)A$(CSI)1G")
 
         # Clear all lines in case some are shorter, or we dropped some
         for idx in 1:num_lines
             write(STDOUT,"$(CSI)1G$(CSI)0K$(CSI)1B")
-            #write(STDOUT,"$(CSI)1G$(CSI)1B")
         end
 
         # Jump back up the number of lines we have to spit out
-        write(STDOUT,"$(CSI)$(length(statuses))A")
+        if length(statuses) > 0
+            write(STDOUT,"$(CSI)$(length(statuses))A")
+        end
         for status in statuses
             write(STDOUT, status)
+            write(STDOUT, " n$(num_lines),s$(skip_lines),len$(length(statuses)),l$(last_draw_lines)")
             write(STDOUT,"\n")
         end
+
+        #if length(statuses) - last_draw_lines > 0
+        #    write(STDOUT,"$(CSI)$(length(statuses) - last_draw_lines)B")
+        #end
 
         # Jump back down however many lines we need to in order to satisfy skip_lines
         if skip_lines > 0

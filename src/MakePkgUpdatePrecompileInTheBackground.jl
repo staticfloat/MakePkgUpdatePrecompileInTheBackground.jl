@@ -35,6 +35,9 @@ function __init__()
 
     # Try to auto-supplant the default REPL backend
     supplant_repl_backend(attempt=1)
+
+    # Try to auto-supplant Pkg.update()
+    supplant_pkgupdate()
 end
 
 Base.precompile(recompile_everything, ())

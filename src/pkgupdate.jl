@@ -121,3 +121,9 @@ function recompile_everything()
     end
     return nothing
 end
+
+function supplant_pkgupdate()
+    eval(Base.Pkg, :(using MakePkgUpdatePrecompileInTheBackground))
+    eval(Base.Pkg, :(update() = (cd(Entry.update,Dir.getmetabranch()); recompile_everything())))
+    return nothing
+end
